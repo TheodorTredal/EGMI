@@ -1,0 +1,6 @@
+env/
+*.pth
+**/*.pth
+.DS_Store
+secret_stuff.py
+rosie.png
