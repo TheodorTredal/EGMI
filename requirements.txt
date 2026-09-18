@@ -1,11 +1,15 @@
+--extra-index-url https://download.pytorch.org/whl/cu121
+
 torch
 torchvision
 pandas
 wandb
-numpy
+numpy<2.0.0
 tqdm
 scikit-image
 ome-zarr
 fastparquet
 boto3
-cv2
+opencv-python-headless
+matplotlib
+seaborn

@@ -1,0 +1,37 @@
+kind: Job
+apiVersion: batch/v1
+metadata:
+  name: ttr042-rosie-testing
+spec:
+  template:
+    spec:
+      nodeSelector:
+        springfield.uit.no/gpu-type: rtx-3090
+      containers:
+      - name: rosie-container
+        image: "ttr042/rosie-test:latest"
+        workingDir: /storage
+        command: ["python3", "extract_channel_0.py"]
+        resources:
+          requests:
+            cpu: 4
+            memory: 32Gi
+            nvidia.com/gpu: 2
+          limits:
+            cpu: 4
+            memory: 32Gi
+            nvidia.com/gpu: 2
+        volumeMounts:
+        - name: storage
+          mountPath: /storage
+        - name: dshm
+          mountPath: /dev/shm
+      volumes:
+      - name: storage
+        persistentVolumeClaim:
+          claimName: storage
+      - name: dshm
+        emptyDir:
+          medium: Memory
+      restartPolicy: OnFailure
+  backoffLimit: 0

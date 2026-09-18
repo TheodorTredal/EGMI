@@ -7,6 +7,8 @@ and outputs TIFF files containing the predictions.
 Usage:
     python evaluate.py --input_dir /path/to/he/images --output_dir /path/to/output --model_path /path/to/model.pth
 """
+import sys
+
 from scipy.ndimage import gaussian_filter
 import os
 import torch
@@ -28,11 +30,40 @@ import cv2
 from scipy.signal import convolve2d
 from skimage.morphology import dilation, disk
  
+cv2.setNumThreads(0)
 # Configuration constants
 BATCH_SIZE = 32
-NUM_WORKERS = 8
+NUM_WORKERS = 3
 PATCH_SIZE = 128
 WHITE_THRESHOLD = 220
+
+
+def get_available_image_filename(output_dir: str, base_name: str, extension: str = ".tiff") -> str:
+    """
+    Genererer et unikt filnavn for bildet slik at eksisterende filer ikke overskrives.
+    Sjekker om base_name_ROSIE.tiff finnes, deretter _1, _2, osv.
+    """
+    # Førstevalg: f.eks. Registered_HE_..._ROSIE.tiff
+    candidate = os.path.join(output_dir, f"{base_name}_ROSIE{extension}")
+    if not os.path.exists(candidate):
+        return candidate
+    
+    # Hvis den finnes, prøv _1, _2, _3 osv.
+    i = 1
+    while os.path.exists(os.path.join(output_dir, f"{base_name}_ROSIE_{i}{extension}")):
+        i += 1
+    return os.path.join(output_dir, f"{base_name}_ROSIE_{i}{extension}")
+
+
+def get_available_log_filename(output_dir, base_name="baserun", extension=".log"):
+    if not os.path.exists(f"{output_dir}/{base_name}{extension}"):
+        return f"{output_dir}/{base_name}{extension}"
+    i = 1
+    while os.path.exists(f"{output_dir}/{base_name}_{i}{extension}"):
+        i += 1
+    return f"{output_dir}/{base_name}_{i}{extension}"
+
+
 
 def pad_patch(patch: np.ndarray, 
              original_size: Tuple[int, int], 
@@ -133,7 +164,8 @@ class ImageDataset(Dataset):
             self.he_zarr = [channel[y_start:y_end, x_start:x_end] for channel in self.he_zarr]
             
         else:  # Handle PNG/JPG
-            img = cv2.imread(image_path)
+            # img = cv2.imread(image_path)
+            img = tifffile.imread(image_path)
             if img is None:
                 raise ValueError(f"Could not load image: {image_path}")
             img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
@@ -301,7 +333,12 @@ def process_image(model: nn.Module,
     
     dataset = ImageDataset(image_path, transform=transform, stride_size=overlap_stride, 
                           exclude_background=exclude_background)
-    dataloader = DataLoader(dataset, batch_size=BATCH_SIZE, num_workers=NUM_WORKERS)
+    dataloader = DataLoader(
+        dataset,
+        batch_size=BATCH_SIZE, 
+        num_workers=NUM_WORKERS,
+        pin_memory=True
+        )
     
     # Get image dimensions from dataset
     height, width = dataset.he_zarr[0].shape
@@ -344,7 +381,7 @@ def process_image(model: nn.Module,
                 
                 # Add weights to the weight map
                 weight_map[t:b, l:r] += weight
-    
+
     # Normalize by weights
     # Avoid division by zero
     weight_map = np.maximum(weight_map, 1e-8)
@@ -365,6 +402,8 @@ def process_image(model: nn.Module,
         # Save raw output as TIFF
         tifffile.imwrite(output_path, raw_output)
 
+
+
 def main():
     parser = argparse.ArgumentParser(description='Run inference on H&E images')
     parser.add_argument('--input_dir', type=str, required=True, help='Directory containing H&E zarr files/PNG images, or path to a single PNG image')
@@ -381,6 +420,19 @@ def main():
     parser.add_argument('--postprocess_image', action='store_true', default=False,
                       help='Whether to apply postprocessing to the predictions (default: False)')
     args = parser.parse_args()
+
+
+    # Create a log file
+    log_filename = get_available_log_filename(args.output_dir)
+    logfile = open(log_filename, "w", buffering=1)
+    sys.stdout = logfile
+    sys.stderr = logfile
+    print("Logging to file: ", log_filename)
+
+    # Create a image file
+    image_id = get_available_log_filename(args.output_dir)
+    
+
     
     # Create output directory if it doesn't exist
     os.makedirs(args.output_dir, exist_ok=True)
@@ -396,40 +448,44 @@ def main():
     model = nn.DataParallel(model)
     # pdb.set_trace()
     model.load_state_dict(torch.load(args.model_path)['model_state_dict'])
+
     model = model.to(device)
+
+
     
     # Check if input_dir is a file or directory
     if os.path.isfile(args.input_dir):
         # Process single image
-        if args.input_dir.lower().endswith(('.png', '.jpg', '.jpeg')):
+        if args.input_dir.lower().endswith(('.png', '.jpg', '.jpeg', '.tif', '.tiff', '.czi')):
             image_path = args.input_dir
-            output_name = os.path.splitext(os.path.basename(args.input_dir))[0]
-            output_path = os.path.join(args.output_dir, f'{output_name}_ROSIE.tiff')
+            print(f"File is supported {image_path}")
+            print("SOMETHING WORKS")
+            
+            # --- RENSING AV FILNAVNET ---
+            clean_path = Path(args.input_dir)
+            suffixes = {'.png', '.jpg', '.jpeg', '.tif', '.tiff', '.czi'}
+            while clean_path.suffix.lower() in suffixes:
+                clean_path = clean_path.with_suffix('')
+            
+            output_name = clean_path.name
+            # ---------------------------
+
+            # Generer et unikt stinavn som ikke overskriver tidligere kjøringer
+            output_path = get_available_image_filename(args.output_dir, output_name)
+            print(f"Saving image as {output_path}")
+            
             process_image(model, image_path, output_path, device, num_channels, args.stride_size, 
                          args.exclude_background, args.apply_border_threshold, args.smooth_sigma, args.postprocess_image)
         else:
             print(f"Skipping {args.input_dir} - unsupported file type")
-    else:
-        # Process directory
-        for img_name in tqdm(os.listdir(args.input_dir)):
-            if img_name.endswith('.ome.zarr'):
-                image_path = os.path.join(args.input_dir, img_name)
-                output_name = os.path.dirname(img_name)
-            elif img_name.lower().endswith(('.png', '.jpg', '.jpeg')):
-                image_path = os.path.join(args.input_dir, img_name)
-                output_name = os.path.splitext(img_name)[0]
-            else:
-                print(f"Skipping {img_name} - unsupported file type")
-                continue
-                
-            if not os.path.exists(image_path):
-                print(f"Skipping {img_name} because it does not exist")
-                continue
-                
-            output_path = os.path.join(args.output_dir, f'{output_name}_ROSIE.tiff')
-            process_image(model, image_path, output_path, device, num_channels, args.stride_size, 
-                         args.exclude_background, args.apply_border_threshold, args.smooth_sigma, args.postprocess_image)
-            print(f"Processed {img_name} and saved to {output_path}")
+
+
+    print("Filen er opprettet og skrevet til disken!")
 
 if __name__ == '__main__':
+    # Set up device
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    print(f"--- Runs on device: {device} (CUDA available: {torch.cuda.is_available()}) ---", flush=True)
+
     main()
+    print(f"END OF CODE")

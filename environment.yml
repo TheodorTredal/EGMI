@@ -1,0 +1,19 @@
+name: ROSIE-testing
+channels:
+  - conda-forge
+dependencies:
+  - python=3.12
+  # PyTorch & datamaskinvisjon
+  - pytorch
+  - torchvision
+  - opencv
+  - scikit-image
+  # Datahåndtering & format
+  - numpy
+  - pandas
+  - fastparquet
+  - ome-zarr
+  # Verktøy & Sky
+  - tqdm
+  - boto3
+  - wandb
