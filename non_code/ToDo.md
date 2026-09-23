@@ -19,22 +19,23 @@ Questions i have:
 1. X Finne ut hvordan jeg sender Wally bilde gjennom modellen
 2. X Finne ut hvordan man setter opp prosjektet for Springfield
 3. X Sette prosjektet opp for Springfield
+4. X Teste om ROSIE gir oss 50 forskjellige kanaler
+5. X Dobbelt sjekke om kanalene er i riktig rekkefølge.
+6. Sjekke om innstillingene er riktig i forhold til hva ROSIE forventer:
+  -> Har bildet riktig oppløsning? Gjør dette en gang til.
+  -> Bør vi istedenfor 8, kjøre 4 steps, eller 2?
+    -> i Så fall så må jeg finne ut hvor mye bilde bør splittes med for å så sy det sammen senere.
+  -> Evt. Spørre om tilgang til treningsdataen for å teste.
+7. Sende inn abstracten.
+8. Lage et histogram med verdier fra 0-1?, Må gjøres på nytt og skikkelig.
+9. X Til abstracten, lage et bilde som er sydd sammen av de tre bildene i "resized_IF" DAPI skal være blå, CD45 grønn og Ecad kan være rosa. 
 
 
-4. X Teste om ROSIE faktisk fungerer (gir oss de 50 ish biomarkørene som er forventet at den skal gi)
- -  ROSIE gir oss 50 kanaler, er usikker på hva kanalene faktisk sier 
+
+HVA ER ZENODO FILEN SIN PX PER MICRO METER??
 
 
-5. Dobbelt sjekke om kanalene er i riktig rekkefølge
-    - Det kan hende at de har endret rekkefølgen til kanalene, men DAPI bør være den første kanalen. 
-    - Hvis kanalene er i riktig rekkefølge, så må vi teste:
-        1. om innstillingene er riktig i forhold til hva ROSIE forventer
-        2. Evt. spørre om vi kan få tilgang til treningsdataen for å teste.
 
-
-6. Lage et histogram med verdier fra 0-1?
-7. X Til abstracten, lage et bilde som er sydd sammen av de tre bildene i "resized_IF" DAPI skal være blå, CD45 grønn og Ecad kan være rosa.
-8. 
 
 
 

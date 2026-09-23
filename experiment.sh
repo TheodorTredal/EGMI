@@ -1,16 +1,42 @@
 #!/bin/sh
 
-# This file runs the actual ROSIE script
-    # --input_dir "/Users/theodortredal/Desktop/IF_images/2. IF/2021_06_11_PS15.19650-B3_Slide1_EcadAF647_CD45AF488IFDAPI.tif" \
-
-mkdir -p output_results
 
 # INPUT
 python3 ROSIECODE/evaluate.py \
-    --input_dir  Registered_HE_HE_PS15.19650-B3_Slide2_20210517.czi.tif \
-    --output_dir output_results \
+    --input_dir  images/OG_split_images/part_bottom_left.tif \
+    --output_name OG_part_bottom_left \
+    --output_dir images/result_images \
     --model_path ROSIECODE/best_model_single.pth \
+    --log_output log \
     --exclude_background \
-    --stride_size 8
+    --stride_size 4
 
 
+python3 ROSIECODE/evaluate.py \
+    --input_dir  images/OG_split_images/part_bottom_right.tif \
+    --output_name OG_part_bottom_right \
+    --output_dir images/result_images \
+    --model_path ROSIECODE/best_model_single.pth \
+    --log_output log \
+    --exclude_background \
+    --stride_size 4
+
+
+python3 ROSIECODE/evaluate.py \
+    --input_dir  images/OG_split_images/part_top_left.tif \
+    --output_name OG_part_top_left \
+    --output_dir images/result_images \
+    --model_path ROSIECODE/best_model_single.pth \
+    --log_output log \
+    --exclude_background \
+    --stride_size 4
+
+
+python3 ROSIECODE/evaluate.py \
+    --input_dir  images/split_images/part_top_right.tif \
+    --output_name OG_part_top_right \
+    --output_dir images/result_images \
+    --model_path ROSIECODE/best_model_single.pth \
+    --log_output log \
+    --exclude_background \
+    --stride_size 4

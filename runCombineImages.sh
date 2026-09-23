@@ -1,10 +1,10 @@
 #!/bin/bash
 
 # Kjør python-skriptet med argumentene dine
-python stitch_image.py \
-  --channel 35 \
-  --input-dir "split_images_results" \
-  --output-dir "split_images_results" \
+python python_scripts/stitch_image.py \
+  --channel 0 \
+  --input-dir "images/result_images" \
+  --output-dir "images/result_images" \
   --overlap 256 \
   --normalize \
   --format png

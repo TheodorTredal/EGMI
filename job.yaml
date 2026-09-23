@@ -11,7 +11,7 @@ spec:
       - name: rosie-container
         image: "ttr042/rosie-test:latest"
         workingDir: /storage
-        command: ["python3", "extract_channel_0.py"]
+        command: ["sh", "experiment.sh"]
         resources:
           requests:
             cpu: 4

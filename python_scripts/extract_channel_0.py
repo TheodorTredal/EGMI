@@ -30,9 +30,9 @@ def extract_channel_1(input_path, output_path):
 
 
 if __name__ == "__main__":
-    input_file = "output_results/Registered_HE_HE_PS15.19650-B3_Slide2_20210517_ROSIE_1.tiff"
+    input_file = "images/result_images/OG_Registered_HE_HE_PS15.19650-B3_Slide2_20210517_ROSIE.tiff"
     output_file = (
-        "output_results/Registered_HE_HE_PS15.19650-B3_Slide2_20210517_ROSIE_1_channel1.tiff"
+        "images/result_images/Registered_HE_HE_PS15.19650-B3_Slide2_20210517_ROSIE_1_channel1.tiff"
     )
 
     extract_channel_1(input_file, output_file)

@@ -5,7 +5,7 @@ This script runs inference on H&E images to predict protein expression levels
 and outputs TIFF files containing the predictions.
 
 Usage:
-    python evaluate.py --input_dir /path/to/he/images --output_dir /path/to/output --model_path /path/to/model.pth
+    python evaluate.py --input_dir /path/to/he/images --output_dir /path/to/output --model_path /path/to/model.pth --output_name "mitt_egne_bilde"
 """
 import sys
 
@@ -55,14 +55,20 @@ def get_available_image_filename(output_dir: str, base_name: str, extension: str
     return os.path.join(output_dir, f"{base_name}_ROSIE_{i}{extension}")
 
 
-def get_available_log_filename(output_dir, base_name="baserun", extension=".log"):
-    if not os.path.exists(f"{output_dir}/{base_name}{extension}"):
-        return f"{output_dir}/{base_name}{extension}"
+def get_available_log_filename(log_dir: str, base_name: str, extension: str = ".log") -> str:
+    """
+    Genererer et unikt logfilnavn basert på filnavnet.
+    Første kjøring: <base_name>_log.log
+    Neste kjøringer: <base_name>_log_1.log, <base_name>_log_2.log, osv.
+    """
+    candidate = os.path.join(log_dir, f"{base_name}_log{extension}")
+    if not os.path.exists(candidate):
+        return candidate
+    
     i = 1
-    while os.path.exists(f"{output_dir}/{base_name}_{i}{extension}"):
+    while os.path.exists(os.path.join(log_dir, f"{base_name}_log_{i}{extension}")):
         i += 1
-    return f"{output_dir}/{base_name}_{i}{extension}"
-
+    return os.path.join(log_dir, f"{base_name}_log_{i}{extension}")
 
 
 def pad_patch(patch: np.ndarray, 
@@ -403,7 +409,6 @@ def process_image(model: nn.Module,
         tifffile.imwrite(output_path, raw_output)
 
 
-
 def main():
     parser = argparse.ArgumentParser(description='Run inference on H&E images')
     parser.add_argument('--input_dir', type=str, required=True, help='Directory containing H&E zarr files/PNG images, or path to a single PNG image')
@@ -419,58 +424,59 @@ def main():
                       help='Sigma for Gaussian smoothing (0 to disable)')
     parser.add_argument('--postprocess_image', action='store_true', default=False,
                       help='Whether to apply postprocessing to the predictions (default: False)')
+    parser.add_argument('--output_name', type=str, default=None, 
+                      help='Spesifikt filnavn/basenavn for utdatabildet (valgfritt)')
+    parser.add_argument('--log_output', type=str, default=None, 
+                      help='Path to log directory (default: <output_dir>/logs)')
     args = parser.parse_args()
 
-
-    # Create a log file
-    log_filename = get_available_log_filename(args.output_dir)
-    logfile = open(log_filename, "w", buffering=1)
-    sys.stdout = logfile
-    sys.stderr = logfile
-    print("Logging to file: ", log_filename)
-
-    # Create a image file
-    image_id = get_available_log_filename(args.output_dir)
-    
-
-    
     # Create output directory if it doesn't exist
     os.makedirs(args.output_dir, exist_ok=True)
-    
-    # Set up device
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    
-    # Load model
-    num_channels = 50
-    model = get_model(num_outputs=num_channels)
-    # if torch.cuda.device_count() > 1:
-    #     print("Using", torch.cuda.device_count(), "GPUs")
-    model = nn.DataParallel(model)
-    # pdb.set_trace()
-    model.load_state_dict(torch.load(args.model_path)['model_state_dict'])
 
-    model = model.to(device)
-
-
-    
     # Check if input_dir is a file or directory
     if os.path.isfile(args.input_dir):
         # Process single image
         if args.input_dir.lower().endswith(('.png', '.jpg', '.jpeg', '.tif', '.tiff', '.czi')):
             image_path = args.input_dir
-            print(f"File is supported {image_path}")
-            print("SOMETHING WORKS")
             
-            # --- RENSING AV FILNAVNET ---
-            clean_path = Path(args.input_dir)
-            suffixes = {'.png', '.jpg', '.jpeg', '.tif', '.tiff', '.czi'}
-            while clean_path.suffix.lower() in suffixes:
-                clean_path = clean_path.with_suffix('')
-            
-            output_name = clean_path.name
+            # --- BESTEM FILNAVNET ---
+            if args.output_name:
+                clean_path = Path(args.output_name)
+                suffixes = {'.png', '.jpg', '.jpeg', '.tif', '.tiff', '.czi'}
+                while clean_path.suffix.lower() in suffixes:
+                    clean_path = clean_path.with_suffix('')
+                output_name = clean_path.name
+            else:
+                clean_path = Path(args.input_dir)
+                suffixes = {'.png', '.jpg', '.jpeg', '.tif', '.tiff', '.czi'}
+                while clean_path.suffix.lower() in suffixes:
+                    clean_path = clean_path.with_suffix('')
+                output_name = clean_path.name
             # ---------------------------
 
-            # Generer et unikt stinavn som ikke overskriver tidligere kjøringer
+            # --- BESTEM LOGGMAPPE OG NVT MAPPE ---
+            log_dir = args.log_output if args.log_output else os.path.join(args.output_dir, "logs")
+            os.makedirs(log_dir, exist_ok=True)
+
+            # Opprett loggfil basert på filnavnet
+            log_filename = get_available_log_filename(log_dir, output_name)
+            logfile = open(log_filename, "w", buffering=1)
+            sys.stdout = logfile
+            sys.stderr = logfile
+            print(f"Logging to file: {log_filename}")
+            print(f"File is supported {image_path}")
+
+            # Set up device
+            device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+            
+            # Load model
+            num_channels = 50
+            model = get_model(num_outputs=num_channels)
+            model = nn.DataParallel(model)
+            model.load_state_dict(torch.load(args.model_path)['model_state_dict'])
+            model = model.to(device)
+
+            # Generer et unikt stinavn for bildet
             output_path = get_available_image_filename(args.output_dir, output_name)
             print(f"Saving image as {output_path}")
             
@@ -479,8 +485,10 @@ def main():
         else:
             print(f"Skipping {args.input_dir} - unsupported file type")
 
-
     print("Filen er opprettet og skrevet til disken!")
+
+
+
 
 if __name__ == '__main__':
     # Set up device

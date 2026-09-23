@@ -21,8 +21,8 @@ Må prøve
 
 
 def split_images():
-    input_file = "HE_for_ROSIE_20x.tif"
-    output_dir = "split_images"
+    input_file = "images/input_images/Registered_HE_HE_PS15.19650-B3_Slide2_20210517.czi.tif"
+    output_dir = "OG_split_images"
     os.makedirs(output_dir, exist_ok=True)
 
     print("Leser inn det store bildet...")
@@ -245,5 +245,6 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    # main()
+    split_images()
     print("END OF CODE")
