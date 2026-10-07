@@ -52,6 +52,43 @@ def split_images():
 
 
 
+def split_image_into_8(num_rows=2, num_cols=4, overlap=256):
+    input_file = "images/input_images/HE_for_ROSIE_40x.tif"
+    output_dir = "OG_split_image_into_8_40x"
+    os.makedirs(output_dir, exist_ok=True)
+
+    print("Leser inn det store bildet...")
+    img = tifffile.imread(input_file)
+    h, w = img.shape[:2]
+
+    # Beregn basis-størrelse per del uten overlapp
+    h_step = h // num_rows
+    w_step = w // num_cols
+
+    print(f"Opprinnelig størrelse: {w}x{h} px")
+    print(f"Deler inn i {num_rows}x{num_cols} ({num_rows * num_cols} deler) med {overlap}px overlapp...")
+
+    for r in range(num_rows):
+        for c in range(num_cols):
+            # Y-koordinater (høyde) med overlapp
+            y1 = 0 if r == 0 else (r * h_step) - overlap
+            y2 = h if r == num_rows - 1 else ((r + 1) * h_step) + overlap
+
+            # X-koordinater (bredde) med overlapp
+            x1 = 0 if c == 0 else (c * w_step) - overlap
+            x2 = w if c == num_cols - 1 else ((c + 1) * w_step) + overlap
+
+            crop = img[y1:y2, x1:x2]
+
+            # Lagrer med navneformat: part_r1_c1.tif, part_r1_c2.tif osv.
+            name = f"r{r+1}_c{c+1}"
+            out_path = os.path.join(output_dir, f"part_{name}_40x.tif")
+            
+            print(f"Lagrer rad {r+1}, kolonne {c+1} ({crop.shape}) til {out_path}...")
+            tifffile.imwrite(out_path, crop, photometric='rgb', bigtiff=True)
+
+    print(f"Ferdig! Lagret {num_rows * num_cols} deler.")
+
 
 
 def get_available_image_filename(
@@ -122,16 +159,16 @@ def combine_images(
     out_file = get_available_image_filename(output_dir, base_name, extension=ext)
 
     tl = load_channel(
-        os.path.join(input_dir, "part_top_left_ROSIE.tiff"), channel_idx
+        os.path.join(input_dir, "OG_part_top_left_ROSIE.tiff"), channel_idx
     )
     tr = load_channel(
-        os.path.join(input_dir, "part_top_right_ROSIE.tiff"), channel_idx
+        os.path.join(input_dir, "OG_part_top_right_ROSIE.tiff"), channel_idx
     )
     bl = load_channel(
-        os.path.join(input_dir, "part_bottom_left_ROSIE.tiff"), channel_idx
+        os.path.join(input_dir, "OG_part_bottom_left_ROSIE.tiff"), channel_idx
     )
     br = load_channel(
-        os.path.join(input_dir, "part_bottom_right_ROSIE.tiff"), channel_idx
+        os.path.join(input_dir, "OG_part_bottom_right_ROSIE.tiff"), channel_idx
     )
 
     # Skjær bort overlappende områder
@@ -244,7 +281,64 @@ def main():
     print("Filen er opprettet og skrevet til disken!")
 
 
+
+def stitch_tiff_tiles(
+    folder_path: str,
+    output_filename: str = "stitched_output.tiff",
+    num_rows: int = 2,
+    num_cols: int = 4,
+    channel_index: int = 0,
+    prefix: str = "part_r",
+    suffix: str = "_40x_ROSIE.tiff",
+) -> np.ndarray:
+    """Syr sammen TIFF-bildebrikker i et rutenett og henter ut én spesifikk kanal."""
+
+    # Legg til kanalnummeret i ut-filnavnet dersom det slutter på '_' (f.eks. 'step_4_channel_.tiff')
+    if output_filename.endswith("_.tiff"):
+        name, ext = os.path.splitext(output_filename)
+        output_filename = f"{name}{channel_index}{ext}"  # Blir 'step_4_channel_0.tiff'
+
+    rows_images = []
+
+    for r in range(1, num_rows + 1):
+        row_tiles = []
+        for c in range(1, num_cols + 1):
+            # Bruk det opprinnelige suffix-et for å finne kildefilene
+            filename = f"{prefix}{r}_c{c}{suffix}"
+            filepath = os.path.join(folder_path, filename)
+
+            if not os.path.exists(filepath):
+                raise FileNotFoundError(f"Fant ikke filen: {filepath}")
+
+            img = tifffile.imread(filepath)
+
+            # Hent ut spesifisert kanal
+            if img.ndim == 3:
+                if img.shape[0] < img.shape[2]:
+                    ch = img[channel_index, :, :]
+                else:
+                    ch = img[:, :, channel_index]
+            else:
+                ch = img
+
+            row_tiles.append(ch)
+
+        rows_images.append(np.hstack(row_tiles))
+
+    full_stitched_image = np.vstack(rows_images)
+
+    output_path = os.path.join(folder_path, output_filename)
+    tifffile.imwrite(output_path, full_stitched_image)
+
+    print(f"Sammensying fullført! Lagret til: {output_path}")
+    print(f"Endelig bildestørrelse: {full_stitched_image.shape}")
+
+    return full_stitched_image
+
+
 if __name__ == "__main__":
-    # main()
-    split_images()
-    print("END OF CODE")
+    stitch_tiff_tiles(
+        folder_path="images/result_images/OG_split_image_into_8_40x",
+        output_filename="step_4_channel_.tiff",
+        channel_index=0
+    )

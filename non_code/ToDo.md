@@ -26,9 +26,20 @@ Questions i have:
   -> Bør vi istedenfor 8, kjøre 4 steps, eller 2?
     -> i Så fall så må jeg finne ut hvor mye bilde bør splittes med for å så sy det sammen senere.
   -> Evt. Spørre om tilgang til treningsdataen for å teste.
-7. Sende inn abstracten.
-8. Lage et histogram med verdier fra 0-1?, Må gjøres på nytt og skikkelig.
+7. X Sende inn abstracten.
+8. X Lage et histogram med verdier fra 0-1?, Må gjøres på nytt og skikkelig.
 9. X Til abstracten, lage et bilde som er sydd sammen av de tre bildene i "resized_IF" DAPI skal være blå, CD45 grønn og Ecad kan være rosa. 
+10. Zenodo bildet har flere pixeler per mikrometer enn det ROSIE forventer! Om bildet er tatt med 20X eller 40X har ingenting å si så lenge oppløsningen er riktig. Derfor kan det være feil å oppskalere (interpolere bildet), men heller downscale bildet istedenfor. Jeg skal derfor kjøre 2 nye tester:
+  1. jeg tar et 3000x3000 sample av bildet og kjøre med de beste innstillingene.
+  2. Jeg skal downsample bildet slik at det har akkurat de innstillingene ROSIE forventer (≈0.3775 μm/px) og kjøre det gjennom modellen med de beste innstillingene også her med et utsnitt på 3000x3000 px bilde.
+  (N.B!) Har forresten brukt feil bilde. Bildet (czi.tif bildet) jeg brukte var en downsampla versjon av det ekte bildet som bare er en .czi fil. 
+
+
+
+# MÅ JOBBE LITT ANNERLEDES
+Testene tar for lang tid. Vi kutter ned bildet til 3000x3000 piksler i henhold til ROSIE artikkelen. Vi velger ut et interesse område og kjører forskjellige tester på det området for å se hva som må til for å få resultatene vi trenger.
+
+
 
 
 
@@ -65,3 +76,63 @@ Trying to upscale the image (adding information that may not exist, need to read
 But first i am trying to run the code without excluding the background and without running post processing image 1, unlike the first inference run. 
 
 
+
+
+
+
+
+
+INFO OM Zenodo bildet:
+
+DoAutoScalingSynchronization: false
+SelectedScalingMaster: LSM
+TheoreticalTotalMagnification: 20
+TotalMagnification: 20
+DefaultScalingUnit: µm
+TheoreticalTotalMagnification: 0.06195
+TotalMagnification: 0.06195
+DefaultScalingUnit: µm
+TheoreticalTotalMagnification: 20
+TotalMagnification: 20
+DefaultScalingUnit: µm
+TheoreticalTotalMagnification: 0.06195
+TotalMagnification: 0.06195
+DefaultScalingUnit: µm
+TheoreticalTotalMagnification: 20
+TotalMagnification: 20
+DefaultScalingUnit: µm
+TheoreticalTotalMagnification: 20
+TotalMagnification: 20
+DefaultScalingUnit: µm
+Magnification: 0.06195
+Magnification: 2.5
+Magnification: 10
+Magnification: 20
+Magnification: 40
+Magnification: 0
+Magnification: 0
+Magnification: 5
+Magnification: 1
+Magnification: 1
+ImageScaling: 
+      
+ScalingComponent: None
+ScalingComponent: None
+ScalingComponent: None
+ScalingComponent: None
+ScalingComponent: None
+ScalingComponent: None
+ScalingComponent: None
+NominalMagnification: 20
+Scaling: 
+
+
+
+(env) theodortredal@tromso-studenter1-3003 EGMI % /Users/theodortredal/Desktop/EGMI/env/bin/python /Users/theodortredal/Desktop/EGMI/python_scripts/crop_image.py
+/Users/theodortredal/Desktop/EGMI/python_scripts/crop_image.py:104: DeprecationWarning: Testing an element's truth value will raise an exception in future versions.  Use specific 'len(elem)' or 'elem is not None' test instead.
+value_node = elem.find("./Value") or elem.find(
+Akse Ukjent: -2.00e-06 m/px (-2.0000 µm/px)
+Akse Ukjent: 2.00e-06 m/px (2.0000 µm/px)
+Akse Ukjent: 1.00e-06 m/px (1.0000 µm/px)
+Akse X: 2.20e-07 m/px (0.2200 µm/px)
+Akse Y: 2.20e-07 m/px (0.2200 µm/px)

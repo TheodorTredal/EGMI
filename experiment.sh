@@ -1,42 +1,35 @@
-#!/bin/sh
+#!/bin/bash
 
+# Konfigurer felles stier og parametere
+INPUT_DIR="images/input_images/OG_split_image_into_8_40x"
+OUTPUT_DIR="images/result_images/OG_split_image_into_8_40x"
+MODEL_PATH="ROSIECODE/best_model_single.pth"
+LOG_DIR="log"
 
-# INPUT
-python3 ROSIECODE/evaluate.py \
-    --input_dir  images/OG_split_images/part_bottom_left.tif \
-    --output_name OG_part_bottom_left \
-    --output_dir images/result_images \
-    --model_path ROSIECODE/best_model_single.pth \
-    --log_output log \
-    --exclude_background \
-    --stride_size 4
+# Stopp skriptet hvis en feil oppstår
+set -e
 
+# Løkk gjennom alle .tif-filer i mappen
+for img in "$INPUT_DIR"/*.tif; do
+    # Sjekk om filen faktisk eksisterer (i tilfelle ingen .tif-filer finnes)
+    [ -e "$img" ] || continue
 
-python3 ROSIECODE/evaluate.py \
-    --input_dir  images/OG_split_images/part_bottom_right.tif \
-    --output_name OG_part_bottom_right \
-    --output_dir images/result_images \
-    --model_path ROSIECODE/best_model_single.pth \
-    --log_output log \
-    --exclude_background \
-    --stride_size 4
+    # Hent ut filnavn uten sti og ending (f.eks. "part_r1_c1")
+    filename=$(basename "$img")
+    name_no_ext="${filename%.*}"
 
+    echo "=== Prosesserer: $filename ==="
 
-python3 ROSIECODE/evaluate.py \
-    --input_dir  images/OG_split_images/part_top_left.tif \
-    --output_name OG_part_top_left \
-    --output_dir images/result_images \
-    --model_path ROSIECODE/best_model_single.pth \
-    --log_output log \
-    --exclude_background \
-    --stride_size 4
+    python3 ROSIECODE/evaluate.py \
+        --input_dir "$img" \
+        --output_name "$name_no_ext" \
+        --output_dir "$OUTPUT_DIR" \
+        --model_path "$MODEL_PATH" \
+        --log_output "$LOG_DIR" \
+        --exclude_background \
+        --stride_size 4 \
+        --postprocess_image \
+        --smooth_sigma 0.5
+done
 
-
-python3 ROSIECODE/evaluate.py \
-    --input_dir  images/split_images/part_top_right.tif \
-    --output_name OG_part_top_right \
-    --output_dir images/result_images \
-    --model_path ROSIECODE/best_model_single.pth \
-    --log_output log \
-    --exclude_background \
-    --stride_size 4
+echo "Alle bilder er ferdig prosessert!"

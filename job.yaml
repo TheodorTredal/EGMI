@@ -1,7 +1,7 @@
 kind: Job
 apiVersion: batch/v1
 metadata:
-  name: ttr042-rosie-testing
+  name: ttr042-rosie-3000x3000-bicubic
 spec:
   template:
     spec:
@@ -11,7 +11,7 @@ spec:
       - name: rosie-container
         image: "ttr042/rosie-test:latest"
         workingDir: /storage
-        command: ["sh", "experiment.sh"]
+        command: ["sh", "experiment2.sh"]
         resources:
           requests:
             cpu: 4

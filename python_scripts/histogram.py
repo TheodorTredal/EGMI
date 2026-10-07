@@ -51,8 +51,9 @@ def plot_single_image_histogram(
     )
 
     ax.set_title(
-        f"{title} – Kanal: {target_channel}", fontsize=14, fontweight="bold"
+        "Pixel intensity for CD45 ROSIE", fontsize=14, fontweight="bold"
     )
+
     ax.set_xlabel("Pixel intensity")
     ax.set_ylabel("Density (Normalized)")
 
@@ -124,14 +125,14 @@ channel_names = [
 # Kjør for én fil av gangen:
 
 # # # 1. ROSIE
-# plot_single_image_histogram(
-#     image_path="Registered_HE_HE_PS15.19650-B3_Slide2_20210517_ROSIE_1_channel1.tiff",
-#     channel_names=channel_names,
-#     target_channel="CD45",
-#     title="ROSIE Output",
-#     color="blue",
-#     output_path="ROSIE_CD45_histogram.png",
-# )
+plot_single_image_histogram(
+    image_path="Registered_HE_HE_PS15.19650-B3_Slide2_20210517_ROSIE_1_channel1.tiff",
+    channel_names=channel_names,
+    target_channel="CD45",
+    title="ROSIE Output",
+    color="blue",
+    output_path="ROSIE_CD45_histogram.png",
+)
 
 # 2. IMC
 # plot_single_image_histogram(
@@ -144,14 +145,14 @@ channel_names = [
 # )
 
 # X 3. IF
-plot_single_image_histogram(
-    image_path="images/ROI001_035_PS15.19650-B3_CD45.tif",
-    channel_names=channel_names,
-    target_channel="CD45",
-    title="IF",
-    color="orange",
-    output_path="IF_DAPI_histogram.png",
-)
+# plot_single_image_histogram(
+#     image_path="images/input_images/ROI001_035_PS15.19650-B3_CD45.tif",
+#     channel_names=channel_names,
+#     target_channel="CD45",
+#     title="IF",
+#     color="orange",
+#     output_path="IF_DAPI_histogram.png",
+# )
 
 
 
@@ -346,48 +347,33 @@ plot_single_image_histogram(
 
 
 # Brukes for å lage et histogram over IMC bildene i zenodo bilde mappen.
-# def get_cd45_pixels_from_folder(folder_path, target_string="CD45"):
-#     """Søker rekursivt i mappen og alle undermapper (f.eks. ROI001, ROI002)
+def get_cd45_pixels_from_folder(folder_path, target_string="CD45"):
+    path = Path(folder_path)
 
-#     etter TIFF-filer som har 'CD45' i filnavnet, og slår dem sammen.
-#     """
-#     path = Path(folder_path)
-#     all_pixels = []
+    # rglob('*') søker gjennom mappen OG alle undermapper
+    matching_files = [
+        f
+        for f in path.rglob("*")
+        if f.is_file()
+        and f.name.lower().endswith((".tif", ".tiff", ".ome.tiff"))
+        and target_string.lower() in f.name.lower()
+    ]
 
-#     # rglob('*') søker gjennom mappen OG alle undermapper (som ROI001)
-#     # matching_files = [
-#     #     f
-#     #     for f in path.rglob("*")
-#     #     if f.is_file()
-#     #     and f.suffix.lower() in [".tif", ".tiff"]
-#     #     and target_string.lower() in f.name.lower()
-#     # ]
+    if not matching_files:
+        raise FileNotFoundError(
+            f"Fant ingen filer med '{target_string}' i navnet under {folder_path}"
+        )
 
+    print(
+        f"Fant {len(matching_files)} CD45-filer under {folder_path}. Leser data..."
+    )
 
-#     matching_files = [
-#     f
-#     for f in path.rglob("*")
-#     if f.is_file()
-#     and f.suffix.lower() in [".tif", ".tiff"]
-#     and "CD45" in f.name
-#     and "CD45RO" not in f.name  # Ekskluderer CD45RO
-#     ]
+    all_pixels = []
+    for img_path in sorted(matching_files):
+        img = tifffile.imread(img_path)
+        all_pixels.append(img.flatten())
 
-#     if not matching_files:
-#         raise FileNotFoundError(
-#             f"Fant ingen filer med '{target_string}' i navnet under {folder_path}"
-#         )
-
-#     print(
-#         f"Fant {len(matching_files)} CD45-filer under {folder_path}. Leser data..."
-#     )
-
-#     for img_path in sorted(matching_files):
-#         img = tifffile.imread(img_path)
-#         # Siden dette er 2D-enkeltkanalfiler, flater vi dem ut direkte
-#         all_pixels.append(img.flatten())
-
-#     return np.concatenate(all_pixels)
+    return np.concatenate(all_pixels)
 
 
 # # --- Bruk ---

@@ -35,4 +35,4 @@ if __name__ == "__main__":
         "images/result_images/Registered_HE_HE_PS15.19650-B3_Slide2_20210517_ROSIE_1_channel1.tiff"
     )
 
-    extract_channel_1(input_file, output_file)
+    extract_channel_1(input_file, output_file) 

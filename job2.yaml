@@ -1,21 +1,37 @@
 kind: Job
 apiVersion: batch/v1
 metadata:
-  name: ttr042-rosie-testing2 #Custom name for your job
+  name: ttr042-rosie-40x-step-4-r2
 spec:
   template:
     spec:
+      nodeSelector:
+        springfield.uit.no/gpu-type: rtx-3090
       containers:
       - name: rosie-container
-        image: "ttr042/rosie-test:latest"  # Replace with your Docker image
+        image: "ttr042/rosie-test:latest"
         workingDir: /storage
-        command: ["sh", "experiment.sh"]  # Adjust if your script name is different
+        command: ["sh", "experiment2.sh"]
+        resources:
+          requests:
+            cpu: 4
+            memory: 16Gi
+            nvidia.com/gpu: 1
+          limits:
+            cpu: 4
+            memory: 16Gi
+            nvidia.com/gpu: 1
         volumeMounts:
         - name: storage
           mountPath: /storage
+        - name: dshm
+          mountPath: /dev/shm
       volumes:
       - name: storage
         persistentVolumeClaim:
           claimName: storage
+      - name: dshm
+        emptyDir:
+          medium: Memory
       restartPolicy: OnFailure
   backoffLimit: 0
